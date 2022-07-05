@@ -10,3 +10,5 @@
 
 ## 이력서 작성
 변정훈 : https://blog.outsider.ne.kr/1234
+유용우 : https://resume.yowu.dev/
+
