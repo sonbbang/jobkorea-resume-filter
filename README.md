@@ -30,7 +30,6 @@ jobkorea-resume-filter/
 │ └── resources/  
 │ └── config.properties # 설정 파일  
 ├── lib/ # 외부 라이브러리  
-└── out/ # 처리된 이력서 파일  
 
 ## 설정 방법
 1. `src/resources/config.properties` 파일에서 다음 설정 가능:
