@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/resume.iml" filepath="$PROJECT_DIR$/resume.iml" />
+      <module fileurl="file://$PROJECT_DIR$/jobkorea-resume-filter.iml" filepath="$PROJECT_DIR$/jobkorea-resume-filter.iml" />
     </modules>
   </component>
 </project>
