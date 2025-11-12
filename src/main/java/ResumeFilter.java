@@ -1,13 +1,17 @@
 package main.java;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResumeFilter {
     public static void main(String[] args) {
@@ -30,9 +34,53 @@ public class ResumeFilter {
                 processResumes(pdfFiles, outputFolder);  // 기존 순차 처리
             }
 
+            // === 최종적으로 out 폴더의 파일 목록 읽기 ===
+            printExtractedNamesFromOutputFolder(outputFolder);
+
         } catch (Exception e) {
             System.err.println("Error processing PDFs: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * out 폴더 내 PDF 파일들을 읽어 이름만 출력
+     */
+    private static void printExtractedNamesFromOutputFolder(File outputFolder) {
+        File[] pdfFiles = outputFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+        if (pdfFiles == null || pdfFiles.length == 0) {
+            System.out.println("No PDF files found in " + outputFolder.getAbsolutePath());
+            return;
+        }
+
+        System.out.println("\n=== Extracted Names from Output Folder ===");
+        Arrays.stream(pdfFiles)
+            .sorted(Comparator.comparingInt(f -> extractYearsFromFileName(f.getName())))
+            .map(File::getName)
+            .map(ResumeFilter::extractNameFromFileName) // Main 클래스 안에 있을 경우 Main::extractNameFromFileName
+            .forEach(System.out::println);
+    }
+    /**
+     * 파일명에서 'xx년차' 앞의 숫자만 추출 (없으면 0)
+     */
+    private static int extractYearsFromFileName(String fileName) {
+        Matcher matcher = Pattern.compile("^(\\d+)년차").matcher(fileName);
+        return matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
+    }
+    /**
+     * 파일명에서 이름만 추출
+     * 예: "7년차_남_51세_12,000만원_C,JAVA,PHP,팀장,프리랜서_백엔드 개발자_shinhy_20250828_0100015.pdf"
+     * → "shinhy"
+     */
+    private static String extractNameFromFileName(String fileName) {
+        String baseName = fileName.replaceFirst("\\.pdf$", "");
+        String[] parts = baseName.split("_");
+
+        if (parts.length >= 3) {
+            return parts[parts.length - 3]; // 마지막에서 두 번째 값
+        } else {
+            return baseName;
         }
     }
 
@@ -75,7 +123,6 @@ public class ResumeFilter {
         int total = pdfFiles.size();
         AtomicInteger processed = new AtomicInteger(0);
         AtomicInteger successful = new AtomicInteger(0);
-
         System.out.println("Starting parallel processing of " + total + " PDF files...");
 
         // 스레드 풀 크기 제한 (CPU 코어 수를 기준으로)
@@ -103,8 +150,10 @@ public class ResumeFilter {
         } finally {
             System.out.printf("Processing complete. Successfully processed %d out of %d files.%n",
                     successful.get(), total);
+
         }
     }
+
 
     private static String generateFileName(ResumeInfo info, String originalFileName) {
         return String.format("%s년차_%s_%s세%s_%s_%s",

@@ -18,6 +18,7 @@ public class FileHandler {
 
     public static File createOutputFolder(String basePath, String outputFolderName) {
         File outputFolder = new File(basePath, outputFolderName);
+        System.out.println("outputFolder = " + outputFolder);
         if (!outputFolder.exists() && !outputFolder.mkdir()) {
             System.out.println("basePath = " + basePath);
             System.out.println("basePath = " + outputFolderName);
