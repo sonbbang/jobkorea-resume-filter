@@ -1,4 +1,4 @@
-package main.java;
+package job;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;

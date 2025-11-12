@@ -1,4 +1,4 @@
-package main.java;
+package job;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,8 +27,22 @@ public class ResumeInfoExtractor {
     }
 
     private static String extractSalary(String text) {
+        //String salary = extractFirstMatch(text, PDFConfig.getSalaryPattern(), 1);
+        // 예: "희망연봉 ￦ 6,910 만원" → "만원" (마지막 토큰) → normalize에서 숫자만 "6,910"으로 정리
         String salary = extractFirstMatch(text, PDFConfig.getSalaryPattern(), 1);
+
+        // 공백 split 후 뒤 값만 사용 (토큰 1개면 그대로)
+        salary = tailTokenOrOriginal(salary);
         return salary != null ? salary : extractFirstMatch(text, PDFConfig.getBeforeSalaryPattern(), 1);
+    }
+
+    // 마지막 토큰만 취득 (토큰이 1개면 그대로)
+    private static String tailTokenOrOriginal(String s) {
+        if (s == null) return null;
+        String trimmed = s.trim();
+        if (trimmed.isEmpty()) return trimmed;
+        String[] parts = trimmed.split("\\s+"); // 연속 공백도 처리
+        return parts.length > 1 ? parts[parts.length - 1] : parts[0];
     }
 
     private static ArrayList<String> extractKeywords(String text) {
@@ -43,7 +57,7 @@ public class ResumeInfoExtractor {
 
         for (String term : PDFConfig.getComputerScienceTerms()) {
             if (text.contains(term)) {
-                keywords.add("컴공");
+                keywords.add(term);
                 break;
             }
         }
