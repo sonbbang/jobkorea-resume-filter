@@ -1,0 +1,69 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'edu.sc.seis.launch4j' version '2.5.0'
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test).configureEach {
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
+application {
+    mainClass = 'job.ResumeFilter'
+    // 실행 시 한글 로그 깨짐 방지 (사용 중일 때)
+    applicationDefaultJvmArgs = ['-Dfile.encoding=UTF-8']
+}
+
+launch4j {
+    outfile = "JobKoreaResumeFilter.exe"
+    mainClassName = "job.ResumeFilter"
+    jar = "${project.buildDir}/libs/jobkorea-resume-filter-1.0.0-all.jar"
+    icon = "${project.projectDir}/job.ico"    // 선택
+    jreMinVersion = "17"
+    // 내부 JRE를 같이 배포하려면:
+    bundledJrePath = "${project.projectDir}/dist/jre"
+
+    headerType = "console"                 // ← 콘솔 창 보이게
+
+    jvmOptions = [
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    ]
+
+
+}
+
+group = 'job'
+version = '1.0.0'
+sourceCompatibility = '17'
+
+mainClassName = 'job.ResumeFilter' // 메인 클래스(패키지 포함)
+
+repositories { mavenCentral() }
+dependencies {
+    implementation 'org.apache.pdfbox:pdfbox:3.0.3'
+    // ...기타 의존성
+}
+
+// 의존 JAR들을 fat JAR 안에 복사해 넣기
+jar {
+    manifest {
+        attributes(
+                'Main-Class': mainClassName
+        )
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
