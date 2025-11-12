@@ -2,6 +2,10 @@ package job;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,7 +53,7 @@ public class ResumeFilter {
             }
 
             // === 최종적으로 out 폴더의 파일 목록 읽기 ===
-            printExtractedNamesFromOutputFolder(outputFolder);
+            saveExtractedNamesToTxt(outputFolder);
 
         } catch (Exception e) {
             System.err.println("Error processing PDFs: " + e.getMessage());
@@ -65,6 +69,42 @@ public class ResumeFilter {
     /**
      * out 폴더 내 PDF 파일들을 읽어 이름만 출력
      */
+
+    private static void saveExtractedNamesToTxt(File outputFolder) {
+        File[] pdfFiles = outputFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+        if (pdfFiles == null || pdfFiles.length == 0) {
+            System.out.println("No PDF files found in " + outputFolder.getAbsolutePath());
+            return;
+        }
+
+        // 결과 파일 경로: outputFolder 내부에 저장
+        Path outFile = outputFolder.toPath().resolve("서류전형이름추출.txt");
+
+        try {
+            List<String> names = Arrays.stream(pdfFiles)
+                .sorted(Comparator.comparingInt(f -> extractYearsFromFileName(f.getName())))
+                .map(File::getName)
+                .map(ResumeFilter::extractNameFromFileName) // Main 내부면 Main::extractNameFromFileName
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                //.distinct() // 중복 제거 원하면 주석 해제
+                .toList();
+
+            Files.write(outFile, names, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+            System.out.println("\n=== Saved Extracted Names ===");
+            System.out.println("Count : " + names.size());
+            System.out.println("File  : " + outFile.toAbsolutePath());
+
+        } catch (IOException e) {
+            System.err.println("Failed to save extracted names: " + e.getMessage());
+        }
+    }
+
+
+    /*
     private static void printExtractedNamesFromOutputFolder(File outputFolder) {
         File[] pdfFiles = outputFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
         if (pdfFiles == null || pdfFiles.length == 0) {
@@ -80,7 +120,7 @@ public class ResumeFilter {
             .filter(Objects::nonNull)                  // null 제외
             .filter(s -> !s.isBlank())                 // (선택) 빈 문자열도 제외
             .forEach(System.out::println);
-    }
+    }*/
     /**
      * 파일명에서 'xx년차' 앞의 숫자만 추출 (없으면 0)
      */
