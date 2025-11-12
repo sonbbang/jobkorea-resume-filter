@@ -70,4 +70,12 @@ java -cp "lib/*;src;src/test/java" org.junit.runner.JUnitCore ResumeFilterTest
 ## exe 생성
 - .\gradlew.bat clean shadowJar launch4j
 - build\launch4j\ 에 exe 생성
-- 
+
+## 유저 가이드
+1. config.properties 수정
+2. 실행 후 C://job/out 확인
+3. 서류전형 Template 액셀에 이름만 붙여넣기
+- out 폴더에 "서류전형이름추출.txt"이 년차 순으로 들어 있으니 액셀에 붙여넣고, "지원자 경력 기간 짧음/지원자 경력 기간 과도하게 초과"를 범위로 한번에 액셀에 기입 가능
+- 년차별로 정리되어 원하는 정보(연차/나이/연봉/키워드)를 통해 파일을 열지 않고 필터링 가능
+
+
