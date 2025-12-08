@@ -19,12 +19,28 @@ public class FileHandler {
         return files != null ? Arrays.asList(files) : new ArrayList<>();
     }
 
-    public static File createOutputFolder(String basePath, String outputFolderName) {
-        File outputFolder = new File(basePath, outputFolderName);
-        if (!outputFolder.exists() && !outputFolder.mkdir()) {
-            System.out.println("basePath = " + basePath);
-            System.out.println("basePath = " + outputFolderName);
-            throw new RuntimeException("Failed to create output directory.");
+    public static void deleteDirectory(File directory) {
+        if (directory.exists()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        deleteDirectory(file);
+                    } else {
+                        file.delete();
+                    }
+                }
+            }
+            directory.delete();
+        }
+    }
+
+    public static File createOutputFolder(String outputFolderName) {
+        File outputFolder = new File(outputFolderName);
+        if (!outputFolder.exists()) {
+            if (!outputFolder.mkdirs()) {
+                throw new RuntimeException("Failed to create output directory: " + outputFolderName);
+            }
         }
         return outputFolder;
     }
@@ -39,7 +55,6 @@ public class FileHandler {
         }
     }
 
-    // 클래스 내부에 추가
     public static List<File> findPdfsUnderChildFolders(String inputFolderPath) {
         File root = new File(inputFolderPath);
         if (!root.exists() || !root.isDirectory()) {
@@ -49,24 +64,23 @@ public class FileHandler {
 
         File[] childDirs = root.listFiles(File::isDirectory);
         if (childDirs == null || childDirs.length == 0) {
-            System.out.println("No child folders found under: " + inputFolderPath);
             return List.of();
         }
 
+        String outputFolderName = PDFConfig.getOutputFolder();
+
         return Arrays.stream(childDirs)
+            .filter(dir -> !dir.getName().equals(outputFolderName)) // 'out' 폴더 제외
             .flatMap(dir -> {
                 File[] pdfs = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".pdf"));
                 if (pdfs == null || pdfs.length == 0) {
-                    // 이 폴더에는 PDF가 없음
-                    return Stream.<File>empty();
+                    return Stream.empty();
                 }
-                // 여러 개일 경우 '가장 최근 수정된' 파일을 선택 (원하면 용량 기준 등으로 변경 가능)
                 File chosen = Arrays.stream(pdfs)
                     .max(Comparator.comparingLong(File::lastModified))
                     .orElse(null);
-                return chosen == null ? Stream.<File>empty() : Stream.of(chosen);
+                return chosen == null ? Stream.empty() : Stream.of(chosen);
             })
             .collect(Collectors.toList());
     }
-
 }

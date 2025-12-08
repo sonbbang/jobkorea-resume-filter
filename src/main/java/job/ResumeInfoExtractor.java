@@ -1,19 +1,65 @@
 package job;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import job.PDFConfig.ResumeFormatType;
 
 public class ResumeInfoExtractor {
 
-    public static ResumeInfo extractResumeInfo(String fullText) {
-        String years = PDFTextExtractor.extractFirstMatch(fullText, PDFConfig.getYearsPattern(), 1);
+    public static ResumeInfo extractResumeInfo(String fullText, String name, ResumeFormatType formatType) {
+        String rawYears = PDFTextExtractor.extractFirstMatch(fullText, PDFConfig.getYearsPattern(), 1);
+        
+        String formattedYears;
+        String mainCareer;
+
+        if ("신입".equals(rawYears)) {
+            formattedYears = "0";
+            mainCareer = "신입";
+        } else {
+            formattedYears = formatExperienceYears(rawYears);
+            mainCareer = extractMainCareer(fullText, formatType);
+        }
+
         String[] genderAndAge = extractGenderAndAge(fullText);
-        String salary = extractSalary(fullText);
+        String salary = extractSalary(fullText, formatType);
+        String education = extractEducation(fullText, formatType);
         List<String> keywords = extractKeywords(fullText);
 
-        return new ResumeInfo(years, genderAndAge[0], genderAndAge[1], salary, keywords);
+        return new ResumeInfo(name, formattedYears, genderAndAge[0], genderAndAge[1], salary, education, mainCareer, null, null, keywords);
+    }
+
+    private static String formatExperienceYears(String rawExperience) {
+        if (rawExperience == null) {
+            return "0";
+        }
+
+        Pattern yearPattern = Pattern.compile("(\\d+)\\s*년");
+        Pattern monthPattern = Pattern.compile("(\\d+)\\s*개월");
+
+        Matcher yearMatcher = yearPattern.matcher(rawExperience);
+        Matcher monthMatcher = monthPattern.matcher(rawExperience);
+
+        int years = 0;
+        int months = 0;
+
+        if (yearMatcher.find()) {
+            years = Integer.parseInt(yearMatcher.group(1));
+        }
+
+        if (monthMatcher.find()) {
+            months = Integer.parseInt(monthMatcher.group(1));
+        }
+
+        if (years == 0 && months == 0) {
+            return "0";
+        }
+
+        double totalYears = years + ((double) months / 10.0);
+        return String.format("%.1f", totalYears);
     }
 
     private static String extractFirstMatch(String text, String pattern, int group) {
@@ -26,23 +72,126 @@ public class ResumeInfoExtractor {
         return matcher.find() ? new String[]{matcher.group(1), matcher.group(3)} : new String[]{null, null};
     }
 
-    private static String extractSalary(String text) {
-        //String salary = extractFirstMatch(text, PDFConfig.getSalaryPattern(), 1);
-        // 예: "희망연봉 ￦ 6,910 만원" → "만원" (마지막 토큰) → normalize에서 숫자만 "6,910"으로 정리
-        String salary = extractFirstMatch(text, PDFConfig.getSalaryPattern(), 1);
-
-        // 공백 split 후 뒤 값만 사용 (토큰 1개면 그대로)
+    private static String extractSalary(String text, ResumeFormatType formatType) {
+        String salary = null;
+        if (formatType == ResumeFormatType.SARAMIN) {
+            salary = extractFirstMatch(text, PDFConfig.getSaraminSalaryPattern(), 1);
+            if (salary != null) {
+                return salary.replace(",", "");
+            }
+        }
+        
+        salary = extractFirstMatch(text, PDFConfig.getJobkoreaSalaryPattern(), 1);
         salary = tailTokenOrOriginal(salary);
         return salary != null ? salary : extractFirstMatch(text, PDFConfig.getBeforeSalaryPattern(), 1);
     }
 
-    // 마지막 토큰만 취득 (토큰이 1개면 그대로)
     private static String tailTokenOrOriginal(String s) {
         if (s == null) return null;
         String trimmed = s.trim();
         if (trimmed.isEmpty()) return trimmed;
-        String[] parts = trimmed.split("\\s+"); // 연속 공백도 처리
+        String[] parts = trimmed.split("\\s+");
         return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    }
+
+    private static String extractEducation(String text, ResumeFormatType formatType) {
+        if (formatType == ResumeFormatType.SARAMIN) {
+            String[] lines = text.split("\\R");
+            for (int i = 1; i < lines.length; i++) {
+                String currentLine = lines[i].trim();
+                if (currentLine.contains("재학중") || currentLine.contains("졸업")) {
+                    return lines[i-1].trim().replaceAll("\\s+", " ");
+                }
+            }
+            return null; // 못 찾은 경우
+        }
+
+        // JOBKOREA 또는 기본 로직
+        int eduHeaderIndex = text.indexOf("학력");
+        if (eduHeaderIndex == -1) return null;
+
+        String eduSection = text.substring(eduHeaderIndex + "학력".length());
+        String[] lines = eduSection.split("\\R");
+        
+        if (formatType == ResumeFormatType.SARAMIN) {
+            System.out.println("[DEBUG] Saramin Education - All lines in section: " + Arrays.toString(lines));
+        }
+
+        List<String> nonEmptyLines = new ArrayList<>();
+        for (String line : lines) {
+            String trimmedLine = line.trim();
+            if (!trimmedLine.isEmpty()) {
+                nonEmptyLines.add(trimmedLine);
+            }
+        }
+
+        if (nonEmptyLines.isEmpty()) {
+            return null;
+        }
+
+        String firstEducationLine = nonEmptyLines.get(0);
+
+        if (formatType == ResumeFormatType.SARAMIN) {
+            String result = firstEducationLine.replaceAll("\\s+", " ").trim();
+            return result;
+        }
+
+        // JOBKOREA 또는 기본 로직
+        String cleanedLine = firstEducationLine;
+        Pattern datePrefixPattern = Pattern.compile(
+            "^(?:\\d{4}[.\\s년]*\\d{0,2}[월\\s]*\\s*(?:~|부터|까지)?\\s*(?:재학중|졸업|수료|휴학|중퇴|졸업예정|\\d{4}[.\\s년]*\\d{0,2}[월\\s]*)?)?\\s*[-~]?\\s*",
+            Pattern.CASE_INSENSITIVE
+        );
+        cleanedLine = datePrefixPattern.matcher(cleanedLine).replaceAll("").trim();
+        cleanedLine = cleanedLine.replaceAll("^~\\s*|\\s*~$", "").trim();
+        cleanedLine = cleanedLine.replaceAll("^-\\s*|\\s*-$", "").trim();
+        cleanedLine = cleanedLine.replaceAll("\\s+", " ").trim();
+
+        return cleanedLine.isEmpty() ? null : cleanedLine;
+    }
+
+    private static String extractMainCareer(String text, ResumeFormatType formatType) {
+        if (formatType == ResumeFormatType.SARAMIN) {
+            String[] lines = text.split("\\R");
+            for (int i = 1; i < lines.length; i++) {
+                String currentLine = lines[i].trim();
+                if (currentLine.matches("총\\s*\\d+\\s*년(\\s*\\d+\\s*개월)?")) {
+                    return lines[i-1].trim().replaceAll("\\s+", " ");
+                }
+            }
+            return null; // 못 찾은 경우
+        }
+
+        // JOBKOREA 또는 기본 로직
+        int careerHeaderIndex = text.indexOf("경력", 20);
+        if (careerHeaderIndex == -1) {
+            careerHeaderIndex = text.indexOf("경력사항", 20);
+        }
+        if (careerHeaderIndex == -1) return null;
+
+        int endOfCareerSection = text.length();
+        String[] nextHeaders = {"학력", "자격증", "수상", "교육", "프로젝트"};
+        for (String header : nextHeaders) {
+            int nextHeaderIndex = text.indexOf(header, careerHeaderIndex + 5);
+            if (nextHeaderIndex != -1 && nextHeaderIndex < endOfCareerSection) {
+                endOfCareerSection = nextHeaderIndex;
+            }
+        }
+
+        String careerSection = text.substring(careerHeaderIndex, endOfCareerSection);
+        String[] lines = careerSection.split("\\R");
+        List<String> careerLines = new ArrayList<>();
+        int linesCollected = 0;
+        
+        for (int i = 1; i < lines.length && linesCollected < 2; i++) {
+            String line = lines[i].trim();
+            if (!line.isEmpty()) {
+                careerLines.add(line.replaceAll("\\s+", " "));
+                linesCollected++;
+            }
+        }
+        
+        return careerLines.isEmpty() ? null : String.join(" ", careerLines);
     }
 
     private static ArrayList<String> extractKeywords(String text) {
@@ -72,13 +221,32 @@ public class ResumeInfoExtractor {
     private static int countOccurrences(String text, String substring) {
         int count = 0;
         int index = text.indexOf(substring);
-
         while (index != -1) {
             count++;
             index = text.indexOf(substring, index + 1);
         }
-
         return count;
     }
 
+    public static String maskPersonalInfo(String text, String name) {
+        String maskedText = text;
+
+        String combinedPattern = "[\\p{IsHangul}]{2,4}\\s*\\(?\\s*(남|여)\\s*\\)?\\s*[/]?\\s*\\d{4}년?";
+        maskedText = maskedText.replaceAll(combinedPattern, "[개인정보 삭제]");
+
+        if (name != null && !name.trim().isEmpty() && name.trim().length() >= 2) {
+            maskedText = maskedText.replaceAll(Pattern.quote(name.trim()), "[이름 삭제]");
+        }
+
+        maskedText = maskedText.replaceAll("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}", "[이메일 삭제]");
+        
+        // 수정된 휴대폰 번호 정규식
+        maskedText = maskedText.replaceAll("01[016789][-\\s]?\\d{3,4}[-\\s]?\\d{4}", "[전화번호 삭제]");
+
+        maskedText = maskedText.replaceAll("\\d{4}년\\s*\\d{1,2}월\\s*\\d{1,2}일", "[생년월일 삭제]");
+        maskedText = maskedText.replaceAll("\\d{4}[-./]\\s*\\d{1,2}[-./]\\s*\\d{1,2}", "[생년월일 삭제]");
+        maskedText = maskedText.replaceAll("만\\s*\\d{1,2}세", "[나이 삭제]");
+
+        return maskedText;
+    }
 }
