@@ -55,6 +55,39 @@ public class FileHandler {
         }
     }
 
+    public static void copyFile(File sourceFile, File outputFolder) {
+        try {
+            Path destinationPath = new File(outputFolder, sourceFile.getName()).toPath();
+            Files.copy(sourceFile.toPath(), destinationPath, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("Non-PDF file copied: " + destinationPath.getFileName());
+        } catch (IOException e) {
+            System.err.println("Failed to copy non-PDF file: " + sourceFile.getName() + ": " + e.getMessage());
+        }
+    }
+
+    public static List<File> findNonPdfFiles(String folderPath) {
+        File folder = new File(folderPath);
+        String outputFolderName = PDFConfig.getOutputFolder();
+        List<File> result = new ArrayList<>();
+
+        File[] rootFiles = folder.listFiles(f -> f.isFile() && !f.getName().toLowerCase().endsWith(".pdf"));
+        if (rootFiles != null) {
+            result.addAll(Arrays.asList(rootFiles));
+        }
+
+        File[] childDirs = folder.listFiles(f -> f.isDirectory() && !f.getName().equals(outputFolderName));
+        if (childDirs != null) {
+            for (File dir : childDirs) {
+                File[] subFiles = dir.listFiles(f -> f.isFile() && !f.getName().toLowerCase().endsWith(".pdf"));
+                if (subFiles != null) {
+                    result.addAll(Arrays.asList(subFiles));
+                }
+            }
+        }
+
+        return result;
+    }
+
     public static List<File> findPdfsUnderChildFolders(String inputFolderPath) {
         File root = new File(inputFolderPath);
         if (!root.exists() || !root.isDirectory()) {

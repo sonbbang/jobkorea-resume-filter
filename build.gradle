@@ -18,41 +18,44 @@ tasks.withType(Test).configureEach {
 }
 
 application {
-    mainClass = 'job.ResumeFilter'
-    // 실행 시 한글 로그 깨짐 방지 (사용 중일 때)
+    mainClass = 'job.ResumeFilterGui'
     applicationDefaultJvmArgs = ['-Dfile.encoding=UTF-8']
 }
 
 launch4j {
     outfile = "JobKoreaResumeFilter.exe"
-    mainClassName = "job.ResumeFilter"
+    mainClassName = "job.ResumeFilterGui"
     jar = "${project.buildDir}/libs/jobkorea-resume-filter-1.0.0-all.jar"
-    icon = "${project.projectDir}/job.ico"    // 선택
+    icon = "${project.projectDir}/job.ico"
     jreMinVersion = "17"
-    // 내부 JRE를 같이 배포하려면:
     bundledJrePath = "${project.projectDir}/dist/jre"
 
-    headerType = "console"                 // ← 콘솔 창 보이게
+    headerType = "gui"
 
     jvmOptions = [
             "--add-opens=java.base/java.nio=ALL-UNNAMED",
             "--add-opens=java.base/java.lang=ALL-UNNAMED",
-            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
     ]
-
-
 }
 
 group = 'job'
 version = '1.0.0'
 sourceCompatibility = '17'
 
-mainClassName = 'job.ResumeFilter' // 메인 클래스(패키지 포함)
+mainClassName = 'job.ResumeFilterGui'
 
 repositories { mavenCentral() }
+/*
+allprojects {
+    tasks.withType(JavaExec) {
+        systemProperty "javax.net.ssl.trustStore", "NONE"
+    }
+}*/
+
 dependencies {
-    implementation 'org.apache.pdfbox:pdfbox:3.0.3'
-    // ...기타 의존성
+    implementation fileTree(dir: 'libs', include: ['pdfbox*.jar'])
 }
 
 // 의존 JAR들을 fat JAR 안에 복사해 넣기

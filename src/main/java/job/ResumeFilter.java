@@ -1,24 +1,26 @@
 package job;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -26,66 +28,61 @@ import job.PDFConfig.ResumeFormatType;
 
 public class ResumeFilter {
 
-    private static ChatGPTService chatGPTService;
-    private static boolean chatgptEnabled;
     private static ResumeFormatType resumeFormatType;
 
     public static void main(String[] args) {
         try {
-            chatgptEnabled = PDFConfig.getChatgptEnabled();
-            resumeFormatType = PDFConfig.getResumeFormatType();
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {}
+        SwingUtilities.invokeLater(() -> new ResumeFilterGui().setVisible(true));
+    }
 
-            if (chatgptEnabled) {
-                String apiKey = PDFConfig.getOpenApiKey();
-                if (apiKey == null || apiKey.equals("YOUR_API_KEY_HERE") || apiKey.trim().isEmpty()) {
-                    System.err.println("OpenAI API key is not configured. ChatGPT integration will be disabled.");
-                    chatgptEnabled = false;
-                } else {
-                    chatGPTService = new ChatGPTService(apiKey);
-                }
-            } else {
-                System.out.println("ChatGPT integration is disabled in config.properties.");
-            }
+    public static void run(String inputFolder, ResumeFormatType type) throws Exception {
+        resumeFormatType = type;
 
-            String inputFolder = PDFConfig.getInputFolder();
-            if (inputFolder == null || inputFolder.trim().isEmpty()) {
-                System.err.println("No input folder configured. Please set 'input.folder' in config.properties.");
-                return;
-            }
-
-            Path outputPath = Paths.get(inputFolder, PDFConfig.getOutputFolder());
-            File outputFolder = outputPath.toFile();
-            if (outputFolder.exists()) {
-                FileHandler.deleteDirectory(outputFolder);
-            }
-            FileHandler.createOutputFolder(outputPath.toString());
-
-            List<File> pdfFiles = FileHandler.findResumeFiles(inputFolder);
-            List<File> subPdfFiles = FileHandler.findPdfsUnderChildFolders(inputFolder);
-
-            List<File> allPdfFiles = new ArrayList<>(pdfFiles != null ? pdfFiles : Collections.emptyList());
-            if (subPdfFiles != null) {
-                allPdfFiles.addAll(subPdfFiles);
-            }
-
-            if (allPdfFiles.isEmpty()) {
-                System.out.println("No PDF files found in the specified input folder and its subfolders.");
-                return;
-            }
-
-            List<ResumeInfo> processedResumes;
-            if (allPdfFiles.size() > 10) {
-                processedResumes = processResumesInParallel(allPdfFiles, outputFolder);
-            } else {
-                processedResumes = processResumes(allPdfFiles, outputFolder);
-            }
-
-            saveResumeInfosToTxt(processedResumes, outputFolder);
-
-        } catch (Exception e) {
-            System.err.println("Error processing PDFs: " + e.getMessage());
-            e.printStackTrace();
+        if (inputFolder == null || inputFolder.trim().isEmpty()) {
+            System.err.println("No input folder configured.");
+            return;
         }
+
+        Path outputPath = Paths.get(inputFolder, PDFConfig.getOutputFolder());
+        File outputFolder = outputPath.toFile();
+        if (outputFolder.exists()) {
+            System.out.println("기존 out 폴더 삭제 중: " + outputFolder.getAbsolutePath());
+            FileHandler.deleteDirectory(outputFolder);
+            if (outputFolder.exists()) {
+                throw new IOException("out 폴더를 삭제할 수 없습니다. '서류전형요약.csv' 파일이 열려 있으면 닫고 다시 실행해주세요.\n경로: " + outputFolder.getAbsolutePath());
+            }
+            System.out.println("기존 out 폴더 삭제 완료");
+        }
+        FileHandler.createOutputFolder(outputPath.toString());
+
+        List<File> nonPdfFiles = FileHandler.findNonPdfFiles(inputFolder);
+        for (File nonPdf : nonPdfFiles) {
+            FileHandler.copyFile(nonPdf, outputFolder);
+        }
+
+        List<File> pdfFiles = FileHandler.findResumeFiles(inputFolder);
+        List<File> subPdfFiles = FileHandler.findPdfsUnderChildFolders(inputFolder);
+
+        List<File> allPdfFiles = new ArrayList<>(pdfFiles != null ? pdfFiles : Collections.emptyList());
+        if (subPdfFiles != null) {
+            allPdfFiles.addAll(subPdfFiles);
+        }
+
+        if (allPdfFiles.isEmpty()) {
+            System.out.println("No PDF files found in the specified input folder and its subfolders.");
+            return;
+        }
+
+        List<ResumeInfo> processedResumes;
+        if (allPdfFiles.size() > 10) {
+            processedResumes = processResumesInParallel(allPdfFiles, outputFolder);
+        } else {
+            processedResumes = processResumes(allPdfFiles, outputFolder);
+        }
+
+        saveResumeInfosToTxt(processedResumes, outputFolder);
     }
 
     private static double getYearsAsDouble(ResumeInfo info) {
@@ -103,33 +100,43 @@ public class ResumeFilter {
         resumeInfos.sort(Comparator.comparingDouble(ResumeFilter::getYearsAsDouble));
 
         Path outFile = outputFolder.toPath().resolve("서류전형요약.csv");
-        List<String> lines = new ArrayList<>();
-        lines.add("이름,나이,성별,최종학력,경력기간(년),주요경력,희망연봉(만원),점수,점수코멘트");
+        
+        try (FileOutputStream fos = new FileOutputStream(outFile.toFile());
+             OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+             BufferedWriter writer = new BufferedWriter(osw)) {
 
-        for (ResumeInfo info : resumeInfos) {
-            if (info != null) {
-                String name = info.name() != null ? info.name() : "";
-                String age = info.age() != null ? info.age() : "";
-                String gender = info.gender() != null ? info.gender() : "";
-                String education = info.education() != null ? info.education().replace("\"", "\"\"") : "";
-                String experienceYears = info.experienceYears() != null ? info.experienceYears() : "0";
-                String mainCareer = info.mainCareer() != null ? info.mainCareer().replace("\"", "\"\"") : "";
-                String desiredSalary = info.desiredSalary() != null ? info.desiredSalary().replace("\"", "\"\"") : "";
-                String score = info.score() != null ? info.score() : "0";
-                String scoreReason = info.scoreReason() != null ? info.scoreReason().replace("\"", "\"\"") : "N/A";
+            // Write UTF-8 BOM
+            fos.write(0xEF);
+            fos.write(0xBB);
+            fos.write(0xBF);
 
-                lines.add(String.format("%s,%s,%s,\"%s\",%s,\"%s\",\"%s\",%s,\"%s\"",
-                        name, age, gender, education, experienceYears, mainCareer, desiredSalary, score, scoreReason
-                ));
+            // Write header
+            writer.write("이름,나이,성별,최종학력,경력기간(년),주요경력,희망연봉(만원)");
+            writer.newLine();
+
+            // Write data
+            for (ResumeInfo info : resumeInfos) {
+                if (info != null) {
+                    String name = info.name() != null ? info.name() : "";
+                    String age = info.age() != null ? info.age() : "";
+                    String gender = info.gender() != null ? info.gender() : "";
+                    String education = info.education() != null ? info.education().replace("\"", "\"\"") : "";
+                    String experienceYears = info.experienceYears() != null ? info.experienceYears() : "0";
+                    String mainCareer = info.mainCareer() != null ? info.mainCareer().replace("\"", "\"\"") : "";
+                    String desiredSalary = info.desiredSalary() != null ? info.desiredSalary().replace("\"", "\"\"") : "";
+
+                    String line = String.format("%s,%s,%s,\"%s\",%s,\"%s\",\"%s\"",
+                            name, age, gender, education, experienceYears, mainCareer, desiredSalary
+                    );
+                    writer.write(line);
+                    writer.newLine();
+                }
             }
-        }
-
-        try {
-            Files.write(outFile, lines, StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            
             System.out.println("\n=== Saved Extracted Resume Infos ===");
-            System.out.println("Count : " + (lines.size() - 1));
+            System.out.println("Count : " + resumeInfos.size());
             System.out.println("File  : " + outFile.toAbsolutePath());
+
         } catch (IOException e) {
             System.err.println("Failed to save extracted resume infos: " + e.getMessage());
         }
@@ -205,62 +212,28 @@ public class ResumeFilter {
             String fullText = PDFTextExtractor.extractText(document);
             String name = extractNameFromFileName(file.getName());
             
-            // 1. 기본 정보 추출 (점수와 사유는 아직 null)
-            ResumeInfo initialInfo = ResumeInfoExtractor.extractResumeInfo(fullText, name, resumeFormatType);
-            
-            String maskedText = ResumeInfoExtractor.maskPersonalInfo(fullText, name);
+            ResumeInfo info = ResumeInfoExtractor.extractResumeInfo(fullText, name, resumeFormatType);
 
-            String score = "0";
-            String reason = "N/A";
-
-            // 2. ChatGPT 호출 (활성화된 경우)
-            if (chatgptEnabled && chatGPTService != null) {
-                try {
-                    Map<String, String> result = chatGPTService.getScoreAndReason(maskedText, PDFConfig.getStructuredJd());
-                    score = result.get("score");
-                    reason = result.get("reason");
-                } catch (IOException e) {
-                    System.err.println("Failed to get score from ChatGPT for file " + file.getName() + ": " + e.getMessage());
-                }
-            }
-
-            // 3. 최종 정보 객체 생성 (점수와 사유 포함)
-            ResumeInfo finalInfo = new ResumeInfo(
-                initialInfo.name(), initialInfo.experienceYears(), initialInfo.gender(), initialInfo.age(), 
-                initialInfo.desiredSalary(), initialInfo.education(), initialInfo.mainCareer(), 
-                score, reason, // 점수와 사유를 여기서 최종적으로 할당
-                initialInfo.technicalSkills()
-            );
-
-            // 4. 파일명 생성 및 복사
-            String newFileName = generateFileName(finalInfo, file.getName(), score);
+            String newFileName = generateFileName(info, file.getName());
             FileHandler.copyResumeWithFormattedName(file, outputFolder, newFileName);
-            
-            // 5. 최종 정보 반환
-            return finalInfo;
+            return info;
         }
     }
 
-    private static String generateFileName(ResumeInfo info, String originalFileName, String score) {
+    private static String generateFileName(ResumeInfo info, String originalFileName) {
         String baseNameWithoutExt = originalFileName.replaceFirst("(?i)\\.pdf$", "");
-        
-        String scorePart = "";
-        if (!"N/A".equals(score)) {
-            scorePart = String.format("_%s점", score);
+
+        if (info.age() == null || info.age().trim().isEmpty()) {
+            return String.format("%s.pdf", baseNameWithoutExt);
         }
 
-        if (info.age() == null || String.valueOf(info.age()).trim().isEmpty()) {
-            return String.format("%s%s.pdf", baseNameWithoutExt, scorePart);
-        }
-
-        return String.format("%s년차_%s_%s세%s_%s_%s%s.pdf",
+        return String.format("%s년차_%s_%s세%s_%s_%s.pdf",
                 info.experienceYears() != null ? info.experienceYears() : "0",
                 info.gender() != null ? info.gender() : "",
                 info.age() != null ? info.age() : "",
                 info.desiredSalary() != null ? "_" + info.desiredSalary() + "만원" : "",
                 String.join(",", info.technicalSkills()),
-                baseNameWithoutExt,
-                scorePart
+                baseNameWithoutExt
         );
     }
 }

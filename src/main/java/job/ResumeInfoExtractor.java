@@ -29,7 +29,7 @@ public class ResumeInfoExtractor {
         String education = extractEducation(fullText, formatType);
         List<String> keywords = extractKeywords(fullText);
 
-        return new ResumeInfo(name, formattedYears, genderAndAge[0], genderAndAge[1], salary, education, mainCareer, null, null, keywords);
+        return new ResumeInfo(name, formattedYears, genderAndAge[0], genderAndAge[1], salary, education, mainCareer, keywords);
     }
 
     private static String formatExperienceYears(String rawExperience) {
@@ -201,13 +201,6 @@ public class ResumeInfoExtractor {
         for (String keyword : PDFConfig.getKeywords()) {
             if (lowerCaseText.contains(keyword.toLowerCase())) {
                 keywords.add(keyword);
-            }
-        }
-
-        for (String term : PDFConfig.getComputerScienceTerms()) {
-            if (text.contains(term)) {
-                keywords.add(term);
-                break;
             }
         }
 
