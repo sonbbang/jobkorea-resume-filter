@@ -13,10 +13,13 @@ public class PDFConfig {
 
 	// 정규식 패턴을 상수로 정의
 	private static final String EXPERIENCE_YEARS_PATTERN = "(총\\s*\\d+\\s*년(?:\\s*\\d+\\s*개월)?|신입)";
-	private static final String GENDER_AND_AGE_PATTERN = "(남|여)\\s*[,/]?\\s*(\\d{4})\\s*(?:년(?:생)?)?\\s*\\(\\s*(?:만\\s*)?(\\d+)\\s*세\\s*\\)";
+	private static final String GENDER_AND_AGE_PATTERN = "(남|여)?\\s*[,/]?\\s*(\\d{4})\\s*(?:년(?:생)?)?\\s*\\(\\s*(?:만\\s*)?(\\d+)\\s*세\\s*\\)";
 	private static final String JOBKOREA_SALARY_PATTERN = "희망연봉\\s*(.*?)\\s*만원";
     private static final String SARAMIN_SALARY_PATTERN = "연봉\\s*(\\d+,?\\d+)\\s*만원";
 	private static final String BEFORE_SALARY_PATTERN = "(.*?)\\s*만원연봉";
+	private static final String SARAMIN_CURRENT_SALARY_PATTERN = "직전\\s*연봉\\s*[:\\s]\\s*([\\d,]+)\\s*만원";
+	private static final String SARAMIN_DESIRED_SALARY_PATTERN = "([\\d,]+~[\\d,]+)\\s*만원";
+	private static final String IS_EMPLOYED_PATTERN = "(재직\\s*중|이직가능)";
 
 	// 정규식 패턴 관련 메소드
 	public static String getYearsPattern() {
@@ -37,6 +40,18 @@ public class PDFConfig {
 
 	public static String getBeforeSalaryPattern() {
 		return BEFORE_SALARY_PATTERN;
+	}
+
+	public static String getSaraminCurrentSalaryPattern() {
+		return SARAMIN_CURRENT_SALARY_PATTERN;
+	}
+
+	public static String getSaraminDesiredSalaryPattern() {
+		return SARAMIN_DESIRED_SALARY_PATTERN;
+	}
+
+	public static String getIsEmployedPattern() {
+		return IS_EMPLOYED_PATTERN;
 	}
 
 	private static final Properties properties = new Properties();

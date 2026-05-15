@@ -5,8 +5,12 @@ import javax.swing.border.*;
 import java.awt.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.prefs.Preferences;
 
 public class ResumeFilterGui extends JFrame {
+
+    private static final Preferences PREFS = Preferences.userNodeForPackage(ResumeFilterGui.class);
+    private static final String PREF_LAST_FOLDER = "lastFolder";
 
     private JTextField folderField;
     private JTextField outputFolderField;
@@ -35,7 +39,7 @@ public class ResumeFilterGui extends JFrame {
         c.gridx = 0; c.gridy = 0; c.weightx = 0;
         top.add(new JLabel("이력서 폴더:"), c);
 
-        String initFolder = System.getProperty("user.home") + java.io.File.separator + "Downloads";
+        String initFolder = PREFS.get(PREF_LAST_FOLDER, System.getProperty("user.home") + File.separator + "Downloads");
         folderField = new JTextField(initFolder);
         c.gridx = 1; c.weightx = 1.0;
         top.add(folderField, c);
@@ -50,7 +54,9 @@ public class ResumeFilterGui extends JFrame {
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             chooser.setDialogTitle("이력서 폴더 선택");
             if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                folderField.setText(chooser.getSelectedFile().getAbsolutePath());
+                String selected = chooser.getSelectedFile().getAbsolutePath();
+                folderField.setText(selected);
+                PREFS.put(PREF_LAST_FOLDER, selected);
             }
         });
 

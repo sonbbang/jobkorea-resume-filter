@@ -25,11 +25,14 @@ public class ResumeInfoExtractor {
         }
 
         String[] genderAndAge = extractGenderAndAge(fullText);
-        String salary = extractSalary(fullText, formatType);
+        String currentSalary = extractCurrentSalary(fullText, formatType);
+        String desiredSalary = extractDesiredSalary(fullText, formatType);
         String education = extractEducation(fullText, formatType);
         List<String> keywords = extractKeywords(fullText);
+        String isEmployed = extractIsEmployed(fullText);
+        String applicationPath = formatType == ResumeFormatType.SARAMIN ? "사람인" : "잡코리아";
 
-        return new ResumeInfo(name, formattedYears, genderAndAge[0], genderAndAge[1], salary, education, mainCareer, keywords);
+        return new ResumeInfo(name, formattedYears, genderAndAge[0], genderAndAge[1], desiredSalary, education, mainCareer, keywords, currentSalary, isEmployed, applicationPath);
     }
 
     private static String formatExperienceYears(String rawExperience) {
@@ -72,21 +75,8 @@ public class ResumeInfoExtractor {
         return matcher.find() ? new String[]{matcher.group(1), matcher.group(3)} : new String[]{null, null};
     }
 
-    private static String extractSalary(String text, ResumeFormatType formatType) {
-        String salary = null;
-        if (formatType == ResumeFormatType.SARAMIN) {
-            salary = extractFirstMatch(text, PDFConfig.getSaraminSalaryPattern(), 1);
-            if (salary != null) {
-                return salary.replace(",", "");
-            }
-        }
-        
-        salary = extractFirstMatch(text, PDFConfig.getJobkoreaSalaryPattern(), 1);
-        salary = tailTokenOrOriginal(salary);
-        return salary != null ? salary : extractFirstMatch(text, PDFConfig.getBeforeSalaryPattern(), 1);
-    }
 
-    private static String tailTokenOrOriginal(String s) {
+private static String tailTokenOrOriginal(String s) {
         if (s == null) return null;
         String trimmed = s.trim();
         if (trimmed.isEmpty()) return trimmed;
@@ -100,7 +90,10 @@ public class ResumeInfoExtractor {
             for (int i = 1; i < lines.length; i++) {
                 String currentLine = lines[i].trim();
                 if (currentLine.contains("재학중") || currentLine.contains("졸업")) {
-                    return lines[i-1].trim().replaceAll("\\s+", " ");
+                    return lines[i-1].trim()
+                            .replaceAll("\\s*\\d{4}[./]\\d{1,2}(~\\d{4}[./]\\d{1,2})?\\s*$", "")
+                            .replaceAll("\\s+", " ")
+                            .trim();
                 }
             }
             return null; // 못 찾은 경우
@@ -156,10 +149,13 @@ public class ResumeInfoExtractor {
             for (int i = 1; i < lines.length; i++) {
                 String currentLine = lines[i].trim();
                 if (currentLine.matches("총\\s*\\d+\\s*년(\\s*\\d+\\s*개월)?")) {
-                    return lines[i-1].trim().replaceAll("\\s+", " ");
+                    return lines[i-1].trim()
+                            .replaceAll("\\s*(재직\\s*중|이직가능|퇴사)\\s*$", "")
+                            .replaceAll("\\s+", " ")
+                            .trim();
                 }
             }
-            return null; // 못 찾은 경우
+            return null;
         }
 
         // JOBKOREA 또는 기본 로직
@@ -170,7 +166,7 @@ public class ResumeInfoExtractor {
         if (careerHeaderIndex == -1) return null;
 
         int endOfCareerSection = text.length();
-        String[] nextHeaders = {"학력", "자격증", "수상", "교육", "프로젝트"};
+        String[] nextHeaders = {"학력", "자격증", "수상", "교육", "프로젝트", "인턴·대외활동 / 해외경험"};
         for (String header : nextHeaders) {
             int nextHeaderIndex = text.indexOf(header, careerHeaderIndex + 5);
             if (nextHeaderIndex != -1 && nextHeaderIndex < endOfCareerSection) {
@@ -183,15 +179,49 @@ public class ResumeInfoExtractor {
         List<String> careerLines = new ArrayList<>();
         int linesCollected = 0;
         
+        Pattern skipLine = Pattern.compile("재직\\s*중|이직가능|퇴사|총\\s*\\d+\\s*년|인턴|대외활동|해외경험|접수번호|포지션\\s*:");
         for (int i = 1; i < lines.length && linesCollected < 2; i++) {
             String line = lines[i].trim();
-            if (!line.isEmpty()) {
+            if (!line.isEmpty() && !skipLine.matcher(line).find()) {
                 careerLines.add(line.replaceAll("\\s+", " "));
                 linesCollected++;
             }
         }
         
         return careerLines.isEmpty() ? null : String.join(" ", careerLines);
+    }
+
+    private static String extractCurrentSalary(String text, ResumeFormatType formatType) {
+        if (formatType == ResumeFormatType.SARAMIN) {
+            // 1차: "직전 연봉 : N,NNN 만원"
+            String val = extractFirstMatch(text, PDFConfig.getSaraminCurrentSalaryPattern(), 1);
+            if (val != null) return val.replace(",", "");
+            // 2차 fallback: "연봉 N,NNN만원" (경력 내 이전 연봉)
+            val = extractFirstMatch(text, PDFConfig.getSaraminSalaryPattern(), 1);
+            return val != null ? val.replace(",", "") : null;
+        }
+        // JOBKOREA: 기존 salary 추출 로직 → 최종연봉으로 사용
+        String salary = extractFirstMatch(text, PDFConfig.getJobkoreaSalaryPattern(), 1);
+        salary = tailTokenOrOriginal(salary);
+        return salary != null ? salary : extractFirstMatch(text, PDFConfig.getBeforeSalaryPattern(), 1);
+    }
+
+    private static String extractDesiredSalary(String text, ResumeFormatType formatType) {
+        if (formatType == ResumeFormatType.JOBKOREA) {
+            int idx = text.indexOf("희망근무조건");
+            if (idx == -1) return "";
+            String section = text.substring(idx, Math.min(idx + 500, text.length()));
+            Matcher m = Pattern.compile("희망연봉\\s+([^\n\r]+)").matcher(section);
+            return m.find() ? m.group(1).trim() : "";
+        }
+        // SARAMIN: "6,000~7,000만원" 범위 형태, 없으면 "회사내규에 따름"
+        Matcher m = Pattern.compile(PDFConfig.getSaraminDesiredSalaryPattern()).matcher(text);
+        return m.find() ? m.group(1).trim() + "만원" : "회사내규에 따름";
+    }
+
+    private static String extractIsEmployed(String text) {
+        Matcher m = Pattern.compile(PDFConfig.getIsEmployedPattern()).matcher(text);
+        return m.find() ? m.group(1).replaceAll("\\s+", "") : "퇴사";
     }
 
     private static ArrayList<String> extractKeywords(String text) {

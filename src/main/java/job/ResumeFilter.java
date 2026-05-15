@@ -70,6 +70,10 @@ public class ResumeFilter {
             allPdfFiles.addAll(subPdfFiles);
         }
 
+        if (resumeFormatType == ResumeFormatType.SARAMIN) {
+            allPdfFiles.removeIf(f -> !f.getName().matches("(?i).*_이력서\\.pdf"));
+        }
+
         if (allPdfFiles.isEmpty()) {
             System.out.println("No PDF files found in the specified input folder and its subfolders.");
             return;
@@ -111,7 +115,7 @@ public class ResumeFilter {
             fos.write(0xBF);
 
             // Write header
-            writer.write("이름,나이,성별,최종학력,경력기간(년),주요경력,희망연봉(만원)");
+            writer.write("이름,나이,성별,최종학력(학교명),경력기간,주요경력,최종연봉,희망연봉,재직여부,합불여부,구분코드,서류평가 코멘트,지원경로");
             writer.newLine();
 
             // Write data
@@ -123,10 +127,21 @@ public class ResumeFilter {
                     String education = info.education() != null ? info.education().replace("\"", "\"\"") : "";
                     String experienceYears = info.experienceYears() != null ? info.experienceYears() : "0";
                     String mainCareer = info.mainCareer() != null ? info.mainCareer().replace("\"", "\"\"") : "";
+                    String currentSalary = info.currentSalary() != null ? info.currentSalary().replace("\"", "\"\"") : "";
                     String desiredSalary = info.desiredSalary() != null ? info.desiredSalary().replace("\"", "\"\"") : "";
+                    String isEmployed = info.isEmployed() != null ? info.isEmployed() : "";
+                    String appPath = info.applicationPath() != null ? info.applicationPath() : "";
 
-                    String line = String.format("%s,%s,%s,\"%s\",%s,\"%s\",\"%s\"",
-                            name, age, gender, education, experienceYears, mainCareer, desiredSalary
+                    double years = getYearsAsDouble(info);
+                    String passOrFail = "불합격";
+                    String classCode = years <= 3.0 ? "1" : "5";
+                    String reviewComment = years <= 3.0 ? "지원자 경력 기간 짧음" : "경력사항이 당사에 적합하지 않음";
+
+                    String line = String.format(
+                            "%s,%s,%s,\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%s,\"%s\",\"%s\"",
+                            name, age, gender, education, experienceYears,
+                            mainCareer, currentSalary, desiredSalary, isEmployed,
+                            passOrFail, classCode, reviewComment, appPath
                     );
                     writer.write(line);
                     writer.newLine();
@@ -231,7 +246,7 @@ public class ResumeFilter {
                 info.experienceYears() != null ? info.experienceYears() : "0",
                 info.gender() != null ? info.gender() : "",
                 info.age() != null ? info.age() : "",
-                info.desiredSalary() != null ? "_" + info.desiredSalary() + "만원" : "",
+                info.currentSalary() != null ? "_" + info.currentSalary() + "만원" : "",
                 String.join(",", info.technicalSkills()),
                 baseNameWithoutExt
         );

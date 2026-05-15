@@ -10,6 +10,9 @@ public record ResumeInfo(
         String desiredSalary,
         String education,
         String mainCareer,
-        List<String> technicalSkills
+        List<String> technicalSkills,
+        String currentSalary,
+        String isEmployed,
+        String applicationPath
 ) {
 }
