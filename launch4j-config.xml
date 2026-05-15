@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>console</headerType>
+  <jar>build/libs/jobkorea-resume-filter-1.0.0-all.jar</jar>
+  <outfile>build/JobKoreaResumeFilter.exe</outfile>
+  <errTitle></errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>http://java.sun.com/javase/downloads</downloadUrl>
+  <supportUrl></supportUrl>
+  <stayAlive>false</stayAlive>
+  <restartOnCrash>false</restartOnCrash>
+  <manifest></manifest>
+  <icon>job.ico</icon>
+  <jre>
+    <path>dist/jre</path>
+    <bundledJre64Bit>false</bundledJre64Bit>
+    <bundledJreAsFallback>false</bundledJreAsFallback>
+    <minVersion>17</minVersion>
+    <maxVersion></maxVersion>
+    <jdkPreference>preferJre</jdkPreference>
+    <runtimeBits>64/32</runtimeBits>
+    <opt>--add-opens=java.base/java.nio=ALL-UNNAMED</opt>
+    <opt>--add-opens=java.base/java.lang=ALL-UNNAMED</opt>
+    <opt>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</opt>
+  </jre>
+  <classPath>
+    <mainClass>job.ResumeFilter</mainClass>
+  </classPath>
+</launch4jConfig>
