@@ -22,6 +22,8 @@ bin/
 /nbdist/
 /.nb-gradle/
 /sample/
+/release/
+/src/main/resources/
 
 ### VS Code ###
 .vscode/
