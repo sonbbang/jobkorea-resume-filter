@@ -47,7 +47,6 @@ jobkorea-resume-filter/
    ```bash
    java -cp "lib/*:src" ResumeFilter
    ```
-
 ## 출력 형식
 처리된 파일명 형식: `{경력}년차_{성별}_{나이}세_{연봉}만원_{키워드}_원본파일명.pdf`  
 
