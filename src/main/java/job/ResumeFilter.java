@@ -29,6 +29,8 @@ import job.PDFConfig.ResumeFormatType;
 public class ResumeFilter {
 
     private static ResumeFormatType resumeFormatType;
+    private static List<String> jdRequiredKeywords = new ArrayList<>();
+    private static List<String> jdPreferredKeywords = new ArrayList<>();
 
     public static void main(String[] args) {
         try {
@@ -38,11 +40,27 @@ public class ResumeFilter {
     }
 
     public static void run(String inputFolder, ResumeFormatType type) throws Exception {
+        run(inputFolder, type, null);
+    }
+
+    public static void run(String inputFolder, ResumeFormatType type, String jdUrl) throws Exception {
         resumeFormatType = type;
 
         if (inputFolder == null || inputFolder.trim().isEmpty()) {
             System.err.println("No input folder configured.");
             return;
+        }
+
+        // JD 키워드 초기화
+        List<String> vocabulary = PDFConfig.getKeywords();
+        if (jdUrl != null && !jdUrl.isBlank()) {
+            jdRequiredKeywords = JdScorer.extractRequiredKeywords(jdUrl, vocabulary);
+            jdPreferredKeywords = JdScorer.extractPreferredKeywords(jdUrl, vocabulary);
+            System.out.println("JD 필수키워드: " + jdRequiredKeywords);
+            System.out.println("JD 우대키워드: " + jdPreferredKeywords);
+        } else {
+            jdRequiredKeywords = new ArrayList<>();
+            jdPreferredKeywords = new ArrayList<>();
         }
 
         Path outputPath = Paths.get(inputFolder, PDFConfig.getOutputFolder());
@@ -115,7 +133,7 @@ public class ResumeFilter {
             fos.write(0xBF);
 
             // Write header
-            writer.write("이름,나이,성별,최종학력(학교명),경력기간,주요경력,최종연봉,희망연봉,재직여부,합불여부,구분코드,서류평가 코멘트,지원경로");
+            writer.write("이름,나이,성별,최종학력(학교명),경력기간,주요경력,최종연봉,희망연봉,재직여부,합불여부,구분코드,서류평가 코멘트,지원경로,JD매칭점수,이직횟수,최대공백(개월),평균재직기간(개월),이직빈도");
             writer.newLine();
 
             // Write data
@@ -137,11 +155,14 @@ public class ResumeFilter {
                     String classCode = years <= 3.0 ? "1" : "5";
                     String reviewComment = years <= 3.0 ? "지원자 경력 기간 짧음" : "경력사항이 당사에 적합하지 않음";
 
+                    String jdScore = info.jdMatchScore() != null ? info.jdMatchScore() : "-";
                     String line = String.format(
-                            "%s,%s,%s,\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%s,\"%s\",\"%s\"",
+                            "%s,%s,%s,\"%s\",%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%s,\"%s\",\"%s\",%s,%s,%s,%s,%s",
                             name, age, gender, education, experienceYears,
                             mainCareer, currentSalary, desiredSalary, isEmployed,
-                            passOrFail, classCode, reviewComment, appPath
+                            passOrFail, classCode, reviewComment, appPath, jdScore,
+                            info.jobChangeCount(), info.maxGapMonths(),
+                            info.avgTenureMonths(), info.jobChangeFrequency()
                     );
                     writer.write(line);
                     writer.newLine();
@@ -227,7 +248,7 @@ public class ResumeFilter {
             String fullText = PDFTextExtractor.extractText(document);
             String name = extractNameFromFileName(file.getName());
             
-            ResumeInfo info = ResumeInfoExtractor.extractResumeInfo(fullText, name, resumeFormatType);
+            ResumeInfo info = ResumeInfoExtractor.extractResumeInfo(fullText, name, resumeFormatType, jdRequiredKeywords, jdPreferredKeywords);
 
             String newFileName = generateFileName(info, file.getName());
             FileHandler.copyResumeWithFormattedName(file, outputFolder, newFileName);

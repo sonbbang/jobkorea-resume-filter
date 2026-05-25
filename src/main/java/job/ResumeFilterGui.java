@@ -15,6 +15,7 @@ public class ResumeFilterGui extends JFrame {
     private JTextField folderField;
     private JTextField outputFolderField;
     private JTextField keywordsField;
+    private JTextArea jdTextArea;
     private JComboBox<String> formatCombo;
     private JButton runButton;
     private JTextArea logArea;
@@ -22,7 +23,7 @@ public class ResumeFilterGui extends JFrame {
     public ResumeFilterGui() {
         setTitle("이력서 필터링 도구");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(750, 580);
+        setSize(750, 700);
         setLocationRelativeTo(null);
         buildUI();
         redirectSystemOut();
@@ -78,8 +79,24 @@ public class ResumeFilterGui extends JFrame {
         top.add(keywordsField, c);
         c.gridwidth = 1;
 
+        // 공고 내용 붙여넣기 (선택)
+        c.gridx = 0; c.gridy = 3; c.weightx = 0; c.anchor = GridBagConstraints.NORTHWEST;
+        top.add(new JLabel("<html>공고 내용<br>(선택):</html>"), c);
+        c.anchor = GridBagConstraints.CENTER;
+
+        jdTextArea = new JTextArea(5, 20);
+        jdTextArea.setLineWrap(true);
+        jdTextArea.setWrapStyleWord(true);
+        jdTextArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        jdTextArea.setToolTipText("채용공고 내용을 복사해서 붙여넣으면 키워드 매칭 점수가 계산됩니다");
+        JScrollPane jdScroll = new JScrollPane(jdTextArea);
+        jdScroll.setPreferredSize(new Dimension(0, 100));
+        c.gridx = 1; c.weightx = 1.0; c.gridwidth = 2;
+        top.add(jdScroll, c);
+        c.gridwidth = 1;
+
         // 이력서 형식 + 실행 버튼
-        c.gridx = 0; c.gridy = 3; c.weightx = 0;
+        c.gridx = 0; c.gridy = 4; c.weightx = 0;
         top.add(new JLabel("이력서 형식:"), c);
 
         formatCombo = new JComboBox<>(new String[]{"잡코리아 (jobkorea)", "사람인 (saramin)"});
@@ -158,13 +175,14 @@ public class ResumeFilterGui extends JFrame {
         PDFConfig.setOutputFolder(outputFolder);
         PDFConfig.setKeywords(keywords);
 
+        String jdText = jdTextArea.getText().trim();
+
         runButton.setEnabled(false);
         logArea.setText("");
 
-        final String finalOutputFolder = outputFolder;
         new Thread(() -> {
             try {
-                ResumeFilter.run(folder, type);
+                ResumeFilter.run(folder, type, jdText.isEmpty() ? null : jdText);
                 SwingUtilities.invokeLater(() ->
                         JOptionPane.showMessageDialog(ResumeFilterGui.this, "처리가 완료되었습니다.", "완료", JOptionPane.INFORMATION_MESSAGE));
             } catch (Exception ex) {

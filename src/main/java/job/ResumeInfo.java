@@ -13,6 +13,11 @@ public record ResumeInfo(
         List<String> technicalSkills,
         String currentSalary,
         String isEmployed,
-        String applicationPath
+        String applicationPath,
+        String jdMatchScore,
+        String jobChangeCount,
+        String maxGapMonths,
+        String avgTenureMonths,
+        String jobChangeFrequency
 ) {
 }

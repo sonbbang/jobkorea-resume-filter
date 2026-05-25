@@ -10,9 +10,10 @@ import job.PDFConfig.ResumeFormatType;
 
 public class ResumeInfoExtractor {
 
-    public static ResumeInfo extractResumeInfo(String fullText, String name, ResumeFormatType formatType) {
+    public static ResumeInfo extractResumeInfo(String fullText, String name, ResumeFormatType formatType,
+                                               List<String> jdRequiredKw, List<String> jdPreferredKw) {
         String rawYears = PDFTextExtractor.extractFirstMatch(fullText, PDFConfig.getYearsPattern(), 1);
-        
+
         String formattedYears;
         String mainCareer;
 
@@ -31,8 +32,18 @@ public class ResumeInfoExtractor {
         List<String> keywords = extractKeywords(fullText);
         String isEmployed = extractIsEmployed(fullText);
         String applicationPath = formatType == ResumeFormatType.SARAMIN ? "사람인" : "잡코리아";
+        String jdMatchScore = JdScorer.score(fullText, jdRequiredKw, jdPreferredKw);
 
-        return new ResumeInfo(name, formattedYears, genderAndAge[0], genderAndAge[1], desiredSalary, education, mainCareer, keywords, currentSalary, isEmployed, applicationPath);
+        List<int[]> periods = CareerAnalyzer.parseCareerPeriods(extractCareerSectionText(fullText, formatType));
+        double totalYears;
+        try { totalYears = Double.parseDouble(formattedYears); } catch (NumberFormatException e) { totalYears = 0; }
+
+        String jobChangeCount     = CareerAnalyzer.jobChangeCount(periods);
+        String maxGapMonths       = CareerAnalyzer.maxGapMonths(periods);
+        String avgTenureMonths    = CareerAnalyzer.avgTenureMonths(periods);
+        String jobChangeFrequency = CareerAnalyzer.jobChangeFrequency(periods, totalYears);
+
+        return new ResumeInfo(name, formattedYears, genderAndAge[0], genderAndAge[1], desiredSalary, education, mainCareer, keywords, currentSalary, isEmployed, applicationPath, jdMatchScore, jobChangeCount, maxGapMonths, avgTenureMonths, jobChangeFrequency);
     }
 
     private static String formatExperienceYears(String rawExperience) {
@@ -239,6 +250,28 @@ private static String tailTokenOrOriginal(String s) {
         }
 
         return keywords;
+    }
+
+    private static String extractCareerSectionText(String text, ResumeFormatType formatType) {
+        if (formatType == ResumeFormatType.SARAMIN) {
+            int end = text.indexOf("경력기술서");
+            return end == -1 ? text : text.substring(0, end);
+        }
+        // 잡코리아 PDF 앞 ~150자는 목차(nav) 섹션 — 200자 이후에서 실제 경력 헤더를 찾음
+        int start = text.indexOf("경력사항");
+        if (start == -1 || start < 200) {
+            start = text.indexOf("경력", 200);
+        }
+        if (start == -1) return text;
+
+        int end = text.length();
+        // "프로젝트"·"학력"·"자격증" 등은 경력 내 프로젝트 설명에 수십 번 등장 → end marker 제외
+        // "인턴·대외활동" 은 부분 문자열로 검색해 " / 해외경험" 유무 무관하게 잡음
+        for (String marker : new String[]{"교육", "인턴·대외활동"}) {
+            int idx = text.indexOf(marker, start + 3);
+            if (idx != -1 && idx < end) end = idx;
+        }
+        return text.substring(start, end);
     }
 
     private static int countOccurrences(String text, String substring) {

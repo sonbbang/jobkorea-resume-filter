@@ -107,4 +107,12 @@ public class PDFConfig {
 		return Arrays.asList(keywordsStr.split(","));
 	}
 
+	public static String getJobRequirements() {
+		return properties.getProperty("job.requirements", "");
+	}
+
+	public static String getJobPreferred() {
+		return properties.getProperty("job.preferred", "");
+	}
+
 }

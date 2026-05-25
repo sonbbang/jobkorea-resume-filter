@@ -46,7 +46,10 @@ sourceCompatibility = '17'
 
 mainClassName = 'job.ResumeFilterGui'
 
-repositories { mavenCentral() }
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
 /*
 allprojects {
     tasks.withType(JavaExec) {
@@ -56,6 +59,7 @@ allprojects {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['pdfbox*.jar'])
+    implementation 'com.github.shin285:KOMORAN:3.3.9'
 }
 
 // 의존 JAR들을 fat JAR 안에 복사해 넣기
