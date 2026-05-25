@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-05-15T14:02:09.970Z",
+  "lastUpdated": "2026-05-21T06:46:53.777Z",
   "activeFeatures": [
     "todo-app",
     "api",
@@ -323,9 +323,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-22T23:38:33.694Z",
-        "lastUpdated": "2026-05-15T14:02:09.970Z"
+        "lastUpdated": "2026-05-21T06:46:53.776Z"
       },
-      "lastFile": "C:\\Users\\n3299\\git\\jobkorea-resume-filter\\src\\main\\java\\job\\ResumeInfoExtractor.java"
+      "lastFile": "C:\\Users\\n3299\\git\\jobkorea-resume-filter\\src\\main\\java\\job\\JdScorer.java"
     }
   },
   "pipeline": {
@@ -336,7 +336,7 @@
   "session": {
     "startedAt": "2026-03-20T10:18:23.279Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-05-15T14:02:09.970Z"
+    "lastActivity": "2026-05-21T06:46:53.777Z"
   },
   "history": [
     {
@@ -1547,6 +1547,426 @@
     },
     {
       "timestamp": "2026-05-15T14:02:09.970Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:47:09.035Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:47:18.572Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:47:29.320Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:47:47.247Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:47:59.207Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:48:14.581Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:48:25.326Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:48:37.323Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:48:50.368Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:49:02.606Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:49:11.697Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:49:28.067Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:49:39.361Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:55:49.202Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:55:59.008Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:56:14.396Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:56:25.357Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:56:43.110Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T13:56:57.353Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:02:33.562Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:02:45.537Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:07:32.850Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:19:08.676Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:20:14.769Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:20:20.878Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:20:34.924Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:20:47.318Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:21:01.322Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:22:07.802Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:22:20.684Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:22:32.889Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:22:43.488Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:22:54.253Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:29:47.725Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:33:00.700Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:53:56.733Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:54:06.406Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:54:16.579Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:54:26.716Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-16T14:54:38.887Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T22:22:19.600Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T22:25:13.829Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T22:31:47.695Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T22:31:59.977Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T22:32:13.123Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T22:34:15.460Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T22:35:27.500Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T23:10:18.805Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T23:29:42.832Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T23:29:59.222Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T23:43:48.298Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T23:58:46.790Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-17T23:59:03.737Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T00:01:50.084Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T00:04:59.937Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T00:05:18.385Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T00:07:59.037Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T00:40:32.927Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T00:49:31.678Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T00:54:52.601Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:00:10.577Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:00:24.998Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:00:37.633Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:02:28.645Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:02:42.395Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:04:48.480Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:05:01.811Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:07:51.327Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-18T01:08:04.540Z",
+      "feature": "job",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-21T06:46:53.776Z",
       "feature": "job",
       "phase": "do",
       "action": "updated"
